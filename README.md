@@ -1,4 +1,5 @@
 # WINDOWLESS / GABOR BREAK v0.1.1
+視力リフレッシュ
 
 A short visual break for desktop work. The local Chrome extension runs a quiet pseudo window, a slow gaze drift, and three procedurally rendered Gabor direction questions. It is a visual break and perception challenge, not a medical tool.
 
