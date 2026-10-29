@@ -35,4 +35,4 @@ The extension requests only the `storage` permission. It saves `sessionCount`, `
 
 Contrast difficulty starts at level 3, ranges from 1 to 8, increases by one after 3/3, stays the same after 2/3, and decreases by one after 0/3 or 1/3. It is labeled **Contrast Lv.** throughout.
 
-Press Escape to close a session at any time. A completed result closes automatically after about three seconds.
+Press Escape to close a session at any time. A completed result closes automatically after about three seconds **of active viewing**. If the WINDOWLESS window is hidden or loses focus, its scene timer, question delay, result timeout, and visual animations pause; they resume when you return. This prevents missed visual scenes when switching apps.
