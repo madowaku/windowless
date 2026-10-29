@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { adjustContrastLevel, clampContrastLevel, contrastForLevel } from '../lib/difficulty';
+import { createActiveClock } from '../lib/activeClock';
 import { createAngleSequence, GABOR_CHOICES, getCorrectChoiceIndex, renderGabor } from '../lib/gabor';
 import { applySessionResult, INITIAL_STORAGE, sanitizeStorage } from '../lib/storage';
 import {
@@ -10,6 +11,42 @@ import {
   sessionReducer,
 } from '../lib/session';
 import { createBreakWindowController } from '../lib/openBreakWindow';
+
+describe('active-only session clock', () => {
+  it('does not consume scene time while the window is hidden or unfocused', () => {
+    const clock = createActiveClock(1000);
+    expect(clock.now(6000)).toBe(6000);
+    expect(clock.setActive(false, 6000)).toBe(6000);
+    expect(clock.isActive()).toBe(false);
+    expect(clock.now(61_000)).toBe(6000);
+    expect(clock.setActive(false, 62_000)).toBe(6000);
+    expect(clock.setActive(true, 62_000)).toBe(6000);
+    expect(clock.isActive()).toBe(true);
+    expect(clock.now(67_000)).toBe(11_000);
+    expect(clock.setActive(false, 67_000)).toBe(11_000);
+    expect(clock.setActive(true, 87_000)).toBe(11_000);
+    expect(clock.now(92_000)).toBe(16_000);
+  });
+
+  it('prevents a hidden 40-second interval from skipping the visual phases', () => {
+    const clock = createActiveClock(1000);
+    let session = createSession(1000, () => 0);
+    clock.setActive(false, 6000);
+    session = sessionReducer(session, { type: 'tick', now: clock.now(61_000) });
+    expect(session.phase).toBe('pseudo-window');
+    clock.setActive(true, 61_000);
+    session = sessionReducer(session, { type: 'tick', now: clock.now(76_000) });
+    expect(session.phase).toBe('gaze-drift');
+  });
+
+  it('does not expire the result display while unfocused', () => {
+    const clock = createActiveClock(1000);
+    clock.setActive(false, 2000);
+    expect(clock.now(15_000)).toBe(2000);
+    clock.setActive(true, 15_000);
+    expect(clock.now(16_000)).toBe(3000);
+  });
+});
 
 describe('contrast difficulty', () => {
   it('moves one level based on the three answer result and clamps the range', () => {
