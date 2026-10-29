@@ -439,6 +439,13 @@ button { font: inherit; }
   .answer-button { width: 46px; height: 48px; }
 }
 
+/* Keep the visual motion in sync with the active-only session clock. */
+.windowless-inactive .break-shell *,
+.windowless-inactive .break-shell *::before,
+.windowless-inactive .break-shell *::after {
+  animation-play-state: paused !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
