@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { adjustContrastLevel, contrastForLevel } from '../lib/difficulty';
+import { createActiveClock } from '../lib/activeClock';
 import {
   calculateSessionResult,
   createSession,
@@ -26,10 +27,31 @@ function BreakExperience({ initialStorage }: BreakExperienceProps) {
   const [session, dispatch] = useReducer(sessionReducer, performance.now(), createSession);
   const [contrastLevel, setContrastLevel] = useState(initialStorage.contrastLevel);
   const savedResultRef = useRef(false);
+  const clockRef = useRef(createActiveClock(session.phaseStartedAt));
 
   useEffect(() => {
-    const timer = window.setInterval(() => dispatch({ type: 'tick', now: performance.now() }), 100);
-    return () => window.clearInterval(timer);
+    const updateActivity = () => {
+      const active = document.visibilityState === 'visible' && document.hasFocus();
+      const now = clockRef.current.setActive(active, performance.now());
+      document.documentElement.classList.toggle('windowless-inactive', !active);
+      if (active) dispatch({ type: 'tick', now });
+    };
+    updateActivity();
+    const timer = window.setInterval(() => {
+      if (clockRef.current.isActive()) {
+        dispatch({ type: 'tick', now: clockRef.current.now(performance.now()) });
+      }
+    }, 100);
+    window.addEventListener('blur', updateActivity);
+    window.addEventListener('focus', updateActivity);
+    document.addEventListener('visibilitychange', updateActivity);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('blur', updateActivity);
+      window.removeEventListener('focus', updateActivity);
+      document.removeEventListener('visibilitychange', updateActivity);
+      document.documentElement.classList.remove('windowless-inactive');
+    };
   }, []);
 
   useEffect(() => {
@@ -40,9 +62,9 @@ function BreakExperience({ initialStorage }: BreakExperienceProps) {
         return;
       }
 
-      if (!/^[1-4]$/.test(event.key) || event.repeat) return;
+      if (!/^[1-4]$/.test(event.key) || event.repeat || !clockRef.current.isActive()) return;
       event.preventDefault();
-      dispatch({ type: 'answer', choiceIndex: Number(event.key) - 1, now: performance.now() });
+      dispatch({ type: 'answer', choiceIndex: Number(event.key) - 1, now: clockRef.current.now(performance.now()) });
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -60,11 +82,10 @@ function BreakExperience({ initialStorage }: BreakExperienceProps) {
   }, [initialStorage.contrastLevel, session.phase, session.correctCount]);
 
   useEffect(() => {
-    if (session.phase !== 'result') return;
-    const remaining = Math.max(0, RESULT_MS - (performance.now() - session.phaseStartedAt));
-    const timer = window.setTimeout(() => window.close(), remaining);
-    return () => window.clearTimeout(timer);
-  }, [session.phase, session.phaseStartedAt]);
+    if (session.phase === 'result' && session.now - session.phaseStartedAt >= RESULT_MS) {
+      window.close();
+    }
+  }, [session.phase, session.phaseStartedAt, session.now]);
 
   const elapsedMs = Math.max(0, session.now - session.phaseStartedAt);
   const phaseProgress = session.phase === 'pseudo-window'
@@ -100,7 +121,11 @@ function BreakExperience({ initialStorage }: BreakExperienceProps) {
           canAnswer={canAnswer}
           feedback={session.feedback}
           selectedChoice={session.selectedChoice}
-          onAnswer={(choiceIndex) => dispatch({ type: 'answer', choiceIndex, now: performance.now() })}
+          onAnswer={(choiceIndex) => {
+            if (clockRef.current.isActive()) {
+              dispatch({ type: 'answer', choiceIndex, now: clockRef.current.now(performance.now()) });
+            }
+          }}
         />
       )}
       {session.phase === 'result' && (
