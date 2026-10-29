@@ -3,7 +3,7 @@
  * Switching away must not silently consume a visual scene or its result.
  * All timestamps (including answers) must use the same clock.
  */
-export function createActiveClock(startedAt: number) {
+export function createActiveClock() {
   let pausedAt: number | null = null;
   let pausedDuration = 0;
 
