@@ -27,7 +27,7 @@ function BreakExperience({ initialStorage }: BreakExperienceProps) {
   const [session, dispatch] = useReducer(sessionReducer, performance.now(), createSession);
   const [contrastLevel, setContrastLevel] = useState(initialStorage.contrastLevel);
   const savedResultRef = useRef(false);
-  const clockRef = useRef(createActiveClock(session.phaseStartedAt));
+  const clockRef = useRef(createActiveClock());
 
   useEffect(() => {
     const updateActivity = () => {
