@@ -14,7 +14,7 @@ import { createBreakWindowController } from '../lib/openBreakWindow';
 
 describe('active-only session clock', () => {
   it('does not consume scene time while the window is hidden or unfocused', () => {
-    const clock = createActiveClock(1000);
+    const clock = createActiveClock();
     expect(clock.now(6000)).toBe(6000);
     expect(clock.setActive(false, 6000)).toBe(6000);
     expect(clock.isActive()).toBe(false);
@@ -29,7 +29,7 @@ describe('active-only session clock', () => {
   });
 
   it('prevents a hidden 40-second interval from skipping the visual phases', () => {
-    const clock = createActiveClock(1000);
+    const clock = createActiveClock();
     let session = createSession(1000, () => 0);
     clock.setActive(false, 6000);
     session = sessionReducer(session, { type: 'tick', now: clock.now(61_000) });
@@ -40,7 +40,7 @@ describe('active-only session clock', () => {
   });
 
   it('does not expire the result display while unfocused', () => {
-    const clock = createActiveClock(1000);
+    const clock = createActiveClock();
     clock.setActive(false, 2000);
     expect(clock.now(15_000)).toBe(2000);
     clock.setActive(true, 15_000);
